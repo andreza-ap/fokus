@@ -35,8 +35,7 @@ const currentSongElement = document.querySelector('#current-song');
 // Seleciona o elemento que exibe o tempo na tela.
 const tempoNaTela = document.querySelector('#timer');
 
-// Seleciona os elementos do modal e ciclo
-const passosCiclo = document.querySelectorAll('.app__card-cycle-step');
+// Seleciona os elementos do modal
 const modalCiclo = document.querySelector('#modal-ciclo');
 const modalTitulo = document.querySelector('#modal-titulo');
 const modalMensagem = document.querySelector('#modal-mensagem');
@@ -50,6 +49,11 @@ let indiceCicloAtual = 0;
 const audioPlay = new Audio('./sons/play.mp3');
 const audioPausa = new Audio('./sons/pause.mp3');
 const audioTempoFinalizado = new Audio('./sons/ready-check.mp3');
+
+// Garante o carregamento dos arquivos de áudio
+audioPlay.load();
+audioPausa.load();
+audioTempoFinalizado.load();
 
 // Variável para armazenar o tempo do timer em segundos. Inicia com 25 minutos (1500s).
 let tempoDecorridoEmSegundos = 1500;
@@ -140,17 +144,6 @@ function mudarModo(contexto) {
     }
 }
 
-// Função para atualizar visualmente o progresso dos passos do ciclo
-function atualizarCicloUI() {
-    passosCiclo.forEach((passo, index) => {
-        passo.classList.remove('active', 'completed');
-        if (index === indiceCicloAtual) {
-            passo.classList.add('active');
-        } else if (index < indiceCicloAtual) {
-            passo.classList.add('completed');
-        }
-    });
-}
 
 // Adiciona um evento de clique ao botão "Foco".
 focoBotao.addEventListener('click', () => {
@@ -160,21 +153,18 @@ focoBotao.addEventListener('click', () => {
         indiceCicloAtual = 0; // Caso contrário, reinicia para o Foco 1
     }
     mudarModo('foco');
-    atualizarCicloUI();
 });
 
 // Adiciona um evento de clique ao botão "Descanso curto".
 curtoBotao.addEventListener('click', () => {
     indiceCicloAtual = 1;
     mudarModo('descanso-curto');
-    atualizarCicloUI();
 });
 
 // Adiciona um evento de clique ao botão "Descanso longo".
 longoBotao.addEventListener('click', () => {
     indiceCicloAtual = 3;
     mudarModo('descanso-longo');
-    atualizarCicloUI();
 });
 
 // Função para alterar o contexto da aplicação (foco, descanso-curto, descanso-longo).
@@ -241,7 +231,6 @@ modalBtnConfirmar.addEventListener('click', () => {
     const proximoContexto = cicloPomodoro[indiceCicloAtual];
     
     mudarModo(proximoContexto);
-    atualizarCicloUI();
     
     // Inicia a contagem regressiva automaticamente
     iniciarOuPausar();
@@ -251,7 +240,10 @@ modalBtnConfirmar.addEventListener('click', () => {
 const contagemRegressiva = () => {
     // Verifica se o tempo chegou a zero.
     if(tempoDecorridoEmSegundos <= 0){
-        audioTempoFinalizado.play()
+        audioTempoFinalizado.currentTime = 0;
+        audioTempoFinalizado.play().catch(err => {
+            console.error("Erro ao reproduzir o som de fim de ciclo:", err);
+        });
         
         const focoAtivo = html.getAttribute('data-contexto') == 'foco'
         if (focoAtivo) {
@@ -276,12 +268,18 @@ startPauseBotao.addEventListener('click', iniciarOuPausar)
 function iniciarOuPausar() {
     // Se 'intervaloId' não for nulo, significa que o timer está rodando, então devemos pausar.
     if (intervaloId) {
-        audioPausa.play();  
+        audioPausa.currentTime = 0;
+        audioPausa.play().catch(err => {
+            console.error("Erro ao reproduzir o som de pausa:", err);
+        });  
         zerar();
         return
     }
     // Se o timer estiver pausado, toca o som de play.
-    audioPlay.play();  
+    audioPlay.currentTime = 0;
+    audioPlay.play().catch(err => {
+        console.error("Erro ao reproduzir o som de início:", err);
+    });  
     // Inicia a contagem regressiva a cada 1 segundo (1000ms) e armazena o ID do intervalo.
     intervaloId = setInterval(contagemRegressiva, 1000);
     // Altera o texto do botão para "Pausar".
@@ -307,9 +305,8 @@ function mostrarTempo() {
     tempoNaTela.innerHTML = `${tempoFormatado}`
 }
 
-// Chama a função uma vez no início para exibir o tempo inicial (25:00) e os indicadores do ciclo.
+// Chama a função uma vez no início para exibir o tempo inicial (25:00).
 mostrarTempo()
-atualizarCicloUI()
 
 // Função para formatar e exibir o nome da música atual
 function atualizarNomeMusica() {
@@ -409,9 +406,16 @@ volumeBotao.addEventListener('click', () => {
 // Adiciona um evento de 'input' ao slider de volume.
 // Este evento é disparado continuamente enquanto o slider é arrastado.
 volumeSlider.addEventListener('input', () => {
-    musica.volume = volumeSlider.value;
+    const vol = volumeSlider.value;
+    musica.volume = vol;
+    audioPlay.volume = vol;
+    audioPausa.volume = vol;
+    audioTempoFinalizado.volume = vol;
 });
 
 
-// Define o volume inicial da música para 50%.
+// Define o volume inicial dos áudios para 50%.
 musica.volume = 0.5;
+audioPlay.volume = 0.5;
+audioPausa.volume = 0.5;
+audioTempoFinalizado.volume = 0.5;
