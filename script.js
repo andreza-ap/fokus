@@ -35,6 +35,17 @@ const currentSongElement = document.querySelector('#current-song');
 // Seleciona o elemento que exibe o tempo na tela.
 const tempoNaTela = document.querySelector('#timer');
 
+// Seleciona os elementos do modal e ciclo
+const passosCiclo = document.querySelectorAll('.app__card-cycle-step');
+const modalCiclo = document.querySelector('#modal-ciclo');
+const modalTitulo = document.querySelector('#modal-titulo');
+const modalMensagem = document.querySelector('#modal-mensagem');
+const modalBtnConfirmar = document.querySelector('#modal-btn-confirmar');
+
+// Ciclo de estudo Pomodoro padrão: foco -> descanso-curto -> foco -> descanso-longo
+const cicloPomodoro = ['foco', 'descanso-curto', 'foco', 'descanso-longo'];
+let indiceCicloAtual = 0;
+
 // Cria objetos de áudio para os efeitos sonoros de play, pause e fim do tempo.
 const audioPlay = new Audio('./sons/play.mp3');
 const audioPausa = new Audio('./sons/pause.mp3');
@@ -108,26 +119,63 @@ musicaFocoInput.addEventListener('change', () => {
     }
 })
 
+// Função auxiliar para mudar o modo de foco/descanso
+function mudarModo(contexto) {
+    if (contexto === 'foco') {
+        tempoDecorridoEmSegundos = 1500;
+    } else if (contexto === 'descanso-curto') {
+        tempoDecorridoEmSegundos = 300;
+    } else if (contexto === 'descanso-longo') {
+        tempoDecorridoEmSegundos = 900;
+    }
+    alterarContexto(contexto);
+    
+    // Adiciona a classe 'active' ao botão correto
+    if (contexto === 'foco') {
+        focoBotao.classList.add('active');
+    } else if (contexto === 'descanso-curto') {
+        curtoBotao.classList.add('active');
+    } else if (contexto === 'descanso-longo') {
+        longoBotao.classList.add('active');
+    }
+}
+
+// Função para atualizar visualmente o progresso dos passos do ciclo
+function atualizarCicloUI() {
+    passosCiclo.forEach((passo, index) => {
+        passo.classList.remove('active', 'completed');
+        if (index === indiceCicloAtual) {
+            passo.classList.add('active');
+        } else if (index < indiceCicloAtual) {
+            passo.classList.add('completed');
+        }
+    });
+}
+
 // Adiciona um evento de clique ao botão "Foco".
 focoBotao.addEventListener('click', () => {
-    tempoDecorridoEmSegundos = 1500;
-    alterarContexto('foco');
-    focoBotao.classList.add('active');
-})
+    if (indiceCicloAtual === 1) {
+        indiceCicloAtual = 2; // Avança para o Foco 2 se estava no descanso curto
+    } else {
+        indiceCicloAtual = 0; // Caso contrário, reinicia para o Foco 1
+    }
+    mudarModo('foco');
+    atualizarCicloUI();
+});
 
 // Adiciona um evento de clique ao botão "Descanso curto".
 curtoBotao.addEventListener('click', () => {
-    tempoDecorridoEmSegundos = 300;
-    alterarContexto('descanso-curto');
-    curtoBotao.classList.add('active')
-})
+    indiceCicloAtual = 1;
+    mudarModo('descanso-curto');
+    atualizarCicloUI();
+});
 
 // Adiciona um evento de clique ao botão "Descanso longo".
 longoBotao.addEventListener('click', () => {
-    tempoDecorridoEmSegundos = 900;
-    alterarContexto('descanso-longo');
-    longoBotao.classList.add('active');
-})
+    indiceCicloAtual = 3;
+    mudarModo('descanso-longo');
+    atualizarCicloUI();
+});
 
 // Função para alterar o contexto da aplicação (foco, descanso-curto, descanso-longo).
 function alterarContexto (contexto) {
@@ -162,12 +210,49 @@ function alterarContexto (contexto) {
     }
 }
 
+// Abre o modal de transição automática
+function abrirModalTransicao() {
+    const proximoIndice = (indiceCicloAtual + 1) % cicloPomodoro.length;
+    const proximoContexto = cicloPomodoro[proximoIndice];
+    
+    if (proximoContexto === 'foco') {
+        modalTitulo.textContent = 'Descanso Finalizado!';
+        modalMensagem.textContent = 'Seu tempo de descanso acabou. Pronto para focar novamente?';
+        modalBtnConfirmar.querySelector('span').textContent = 'Iniciar Foco';
+    } else if (proximoContexto === 'descanso-curto') {
+        modalTitulo.textContent = 'Foco Finalizado!';
+        modalMensagem.textContent = 'Parabéns por completar o ciclo de foco! Pronto para o descanso curto?';
+        modalBtnConfirmar.querySelector('span').textContent = 'Iniciar Descanso Curto';
+    } else if (proximoContexto === 'descanso-longo') {
+        modalTitulo.textContent = 'Ciclo Completo!';
+        modalMensagem.textContent = 'Parabéns! Você completou a sequência de foco. Pronto para o descanso longo?';
+        modalBtnConfirmar.querySelector('span').textContent = 'Iniciar Descanso Longo';
+    }
+    
+    modalCiclo.classList.remove('hidden');
+}
+
+// Configura o evento do botão de confirmação do modal
+modalBtnConfirmar.addEventListener('click', () => {
+    modalCiclo.classList.add('hidden');
+    
+    // Avança o índice do ciclo
+    indiceCicloAtual = (indiceCicloAtual + 1) % cicloPomodoro.length;
+    const proximoContexto = cicloPomodoro[indiceCicloAtual];
+    
+    mudarModo(proximoContexto);
+    atualizarCicloUI();
+    
+    // Inicia a contagem regressiva automaticamente
+    iniciarOuPausar();
+});
+
 // Função que executa a contagem regressiva do timer.
 const contagemRegressiva = () => {
     // Verifica se o tempo chegou a zero.
     if(tempoDecorridoEmSegundos <= 0){
         audioTempoFinalizado.play()
-        alert('Tempo finalizado!');
+        
         const focoAtivo = html.getAttribute('data-contexto') == 'foco'
         if (focoAtivo) {
             const evento = new CustomEvent('FocoFinalizado');
@@ -175,6 +260,9 @@ const contagemRegressiva = () => {
         }
         // Para a contagem regressiva.
         zerar();
+        
+        // Abre o modal para autorizar a mudança e início da próxima etapa
+        abrirModalTransicao();
         return 
     }
     tempoDecorridoEmSegundos -= 1;
@@ -219,8 +307,9 @@ function mostrarTempo() {
     tempoNaTela.innerHTML = `${tempoFormatado}`
 }
 
-// Chama a função uma vez no início para exibir o tempo inicial (25:00).
+// Chama a função uma vez no início para exibir o tempo inicial (25:00) e os indicadores do ciclo.
 mostrarTempo()
+atualizarCicloUI()
 
 // Função para formatar e exibir o nome da música atual
 function atualizarNomeMusica() {

@@ -52,6 +52,20 @@
                     </li>
                 </ul>
                 <div id="timer" class="app__card-timer"></div>
+                <div class="app__card-cycles">
+                    <div class="app__card-cycle-step active" data-step="0">
+                        <span class="step-dot"></span> Foco 1
+                    </div>
+                    <div class="app__card-cycle-step" data-step="1">
+                        <span class="step-dot"></span> Curto
+                    </div>
+                    <div class="app__card-cycle-step" data-step="2">
+                        <span class="step-dot"></span> Foco 2
+                    </div>
+                    <div class="app__card-cycle-step" data-step="3">
+                        <span class="step-dot"></span> Longo
+                    </div>
+                </div>
                 <div class="app__card-music-controls-container">
 
                     <div class="app__card-list-item">
@@ -170,6 +184,15 @@
         </footer>
     </main>
 
+    <!-- Modal de Transição de Ciclo -->
+    <div id="modal-ciclo" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-titulo" class="modal-title">Ciclo Finalizado!</h2>
+            <p id="modal-mensagem" class="modal-message">Prepare-se para a próxima etapa.</p>
+            <button id="modal-btn-confirmar" class="app__card-primary-button modal-btn">
+                <span>Continuar</span>
+            </button>
+        </div>
+    </div>
 </body>
-
 </html>
