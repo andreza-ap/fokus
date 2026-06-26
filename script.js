@@ -59,6 +59,8 @@ audioTempoFinalizado.load();
 let tempoDecorridoEmSegundos = 1500;
 // Variável para armazenar o ID do intervalo (setInterval), para que possamos pará-lo depois.
 let intervaloId = null;
+// Variável para armazenar o timestamp final de término do ciclo.
+let tempoFinal = null;
 
 // Lista de músicas disponíveis.
 const musicas = [
@@ -238,6 +240,11 @@ modalBtnConfirmar.addEventListener('click', () => {
 
 // Função que executa a contagem regressiva do timer.
 const contagemRegressiva = () => {
+    const diferencaMilissegundos = tempoFinal - Date.now();
+    tempoDecorridoEmSegundos = Math.max(0, Math.ceil(diferencaMilissegundos / 1000));
+    
+    mostrarTempo();
+    
     // Verifica se o tempo chegou a zero.
     if(tempoDecorridoEmSegundos <= 0){
         audioTempoFinalizado.currentTime = 0;
@@ -257,8 +264,6 @@ const contagemRegressiva = () => {
         abrirModalTransicao();
         return 
     }
-    tempoDecorridoEmSegundos -= 1;
-    mostrarTempo()
 }
 
 // Adiciona um evento de clique ao botão principal para iniciar ou pausar o timer.
@@ -272,6 +277,8 @@ function iniciarOuPausar() {
         audioPausa.play().catch(err => {
             console.error("Erro ao reproduzir o som de pausa:", err);
         });  
+        // Calcula o tempo decorrido em segundos real antes de pausar
+        tempoDecorridoEmSegundos = Math.max(0, Math.ceil((tempoFinal - Date.now()) / 1000));
         zerar();
         return
     }
@@ -280,6 +287,10 @@ function iniciarOuPausar() {
     audioPlay.play().catch(err => {
         console.error("Erro ao reproduzir o som de início:", err);
     });  
+    
+    // Define a hora final de término do cronômetro
+    tempoFinal = Date.now() + (tempoDecorridoEmSegundos * 1000);
+    
     // Inicia a contagem regressiva a cada 1 segundo (1000ms) e armazena o ID do intervalo.
     intervaloId = setInterval(contagemRegressiva, 1000);
     // Altera o texto do botão para "Pausar".
